@@ -1,7 +1,7 @@
 talend-codegen
 ==============
 
-Command line code generation (job build/export) plugin for talend
+Command line code generation (job build/export) plugin for Talend, updated for >= v6.0.
 
 Compiling & Configuring
 -----------------------
@@ -43,7 +43,7 @@ Generation:
 # create out directory
 $ mkdir -p './out'
 
-# With all '-need' options enabled 
+# With all '-need' options enabled
 $ talend-codegen -p './MyProjectDir/' -o './out/' -j './MyJobName' -a
 
 # With custom options
@@ -97,12 +97,12 @@ Invoke talend with the following mandatory command line arguments:
  * -targetDir - the directory where the exported job will be placed
 
 Eclipse application arguments
- * -application au.org.emii.talend.codegen.Generator - run the code generation plugin 
+ * -application au.org.emii.talend.codegen.Generator - run the code generation plugin
  * -nosplash stops the display of the gui splash window
  * --launcher.suppressErrors stops errors being displayed in message boxes - output to stderr instead
  * -data specifies the talend workspace used for building the project - created automatically if it doesn't exist (recommended to ensure a clean build)
  * --clean_component_cache tells TOS to reload external components and rebuild the cache
- 
+
 Some optional command line arguments you can have:
  * -version - version of job to be exported
  * -componentDir - location of any custom components used in the job
@@ -132,7 +132,7 @@ cp $PROJECTDIR/libs/* /home/TOS_DI-r118616-V5.5.1/lib/java/
     -application au.org.emii.talend.codegen.Generator \
     -jobName $JOBNAME -projectDir $PROJECTDIR \
     -targetDir $TARGETDIR -componentDir $COMPONENTDIR
-``` 
+```
 
 
 

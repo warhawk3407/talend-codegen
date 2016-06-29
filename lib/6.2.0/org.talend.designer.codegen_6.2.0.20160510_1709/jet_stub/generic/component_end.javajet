@@ -1,0 +1,48 @@
+<%@ jet 
+imports="
+		org.talend.components.api.component.ComponentDefinition
+		org.talend.designer.core.generic.model.Component
+    	org.talend.core.model.process.INode 
+    	org.talend.core.model.process.ElementParameterParser 
+		org.talend.core.model.metadata.IMetadataTable 
+		org.talend.core.model.metadata.IMetadataColumn		
+		org.talend.designer.codegen.config.CodeGeneratorArgument
+		org.talend.core.model.process.IConnection
+		org.talend.core.model.process.IConnectionCategory
+		java.util.List
+		"
+%>
+// end of generic
+
+<%
+CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
+INode node = (INode)codeGenArgument.getArgument();
+String cid = node.getUniqueName();
+Component component = (Component)node.getComponent();
+ComponentDefinition def = component.getComponentDefinition();
+
+IMetadataTable metadata = null;
+List<IMetadataTable> metadatas = node.getMetadataList();
+if ((metadatas != null) && (metadatas.size() > 0)) {
+	metadata = metadatas.get(0);
+}
+
+if (metadata == null) {
+	return stringBuffer.toString();
+}
+
+if(def instanceof org.talend.components.api.component.InputComponentDefinition){
+%>
+	} // while
+<%
+%>
+
+	reader_<%=cid%>.close();
+<%
+}else if(def instanceof org.talend.components.api.component.OutputComponentDefinition){
+// Output
+%>
+	writer_<%=cid%>.close();
+<%
+}
+%>
