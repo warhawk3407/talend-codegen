@@ -86,6 +86,7 @@ codegen options (for -O):
  * -needJobScript
  * -needContext
  * -applyToChildren
+ * -buildType - (osgi/job)
 ```
 
 Usage invoking TOS directly
