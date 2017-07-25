@@ -64,7 +64,6 @@ public class Generator implements IApplication {
         String targetDir = Params.getMandatoryStringOption("-targetDir");
         String version = Params.getStringOption("-version", "Latest");
         String componentDir = Params.getStringOption("-componentDir", "");
-
         String exportType = Params.getStringOption("-exportType", "job");
 
         // Get export options
@@ -159,7 +158,6 @@ public class Generator implements IApplication {
             // Add resources built to archive
             createArchive( tempZipFile.getAbsolutePath(), resourcesToExport );
 
-
             // Rebuild zip file to use classpath jar instead of including all jars in launch script
             ClasspathFixup fixup = new ClasspathFixup(manager);
 
@@ -194,7 +192,6 @@ public class Generator implements IApplication {
         List<ExportFileResource> processes = new ArrayList<ExportFileResource>();
 
         ExportFileResource resource = new ExportFileResource(job, job.getProperty().getLabel());
-
 
         processes.add(resource);
 
