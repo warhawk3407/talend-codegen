@@ -45,6 +45,7 @@ import org.talend.core.ui.export.ArchiveFileExportOperationFullPath;
 import org.talend.repository.documentation.ExportFileResource;
 import org.talend.repository.ui.wizards.exportjob.JavaJobExportReArchieveCreator;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobJavaScriptsManager;
+import org.talend.repository.ui.wizards.exportjob.scriptsmanager.esb.JobJavaScriptOSGIForESBManager;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobScriptsManager.ExportChoice;
 
 public class Generator implements IApplication {
@@ -63,6 +64,8 @@ public class Generator implements IApplication {
         String targetDir = Params.getMandatoryStringOption("-targetDir");
         String version = Params.getStringOption("-version", "Latest");
         String componentDir = Params.getStringOption("-componentDir", "");
+
+        String exportType = Params.getStringOption("-exportType", "job");
 
         // Get export options
         Map<ExportChoice, Object> exportChoiceMap = getExportOptions();
@@ -93,7 +96,7 @@ public class Generator implements IApplication {
         initCodeGenerationEngine();
 
         // Export the job
-        exportJob(jobName, projectDir, targetDir, version, exportChoiceMap);
+        exportJob(jobName, projectDir, targetDir, version, exportChoiceMap, exportType);
 
         // Log off the project
         log.info("Logging off " + project.getLabel() + "...");
@@ -119,16 +122,23 @@ public class Generator implements IApplication {
 
     // Build export file
     private void exportJob(String jobName, String projectDir, String targetDir, String version,
-            Map<ExportChoice, Object> exportChoiceMap) throws ProcessorException, InvocationTargetException, InterruptedException, SystemException, CoreException {
+            Map<ExportChoice, Object> exportChoiceMap, String exportType) throws ProcessorException, InvocationTargetException, InterruptedException, SystemException, CoreException {
 
         log.info("Exporting " + jobName + "...");
 
         // Get job to build
         ProcessItem job = getJob(jobName, version);
 
-        // Create the job script manager that performs the build
-        JobJavaScriptsManager manager = new JobJavaScriptsManager(exportChoiceMap, "Default", "Unix",
-                IProcessor.NO_STATISTICS, IProcessor.NO_TRACES);
+        JobJavaScriptsManager manager = null;
+
+        if (exportType != null && exportType.equals("osgi")) {
+                manager = new JobJavaScriptOSGIForESBManager (exportChoiceMap, "Default", "Unix",
+                        IProcessor.NO_STATISTICS, IProcessor.NO_TRACES);
+        }
+        else {
+                manager = new JobJavaScriptsManager(exportChoiceMap, "Default", "Unix",
+                       IProcessor.NO_STATISTICS, IProcessor.NO_TRACES);
+        }
 
         manager.setDestinationPath(targetDir + "/" + job.getProperty().getLabel() + "_" + version + ".zip");
         manager.setContextEditableResultValuesList(new ArrayList<ContextParameterType>());
@@ -141,12 +151,14 @@ public class Generator implements IApplication {
             List<ExportFileResource> resourcesToExport = generateExportResources(
                     job, job.getProperty().getVersion(), manager);
 
+
             File tempZipFile = createTempFile();
 
 //          manager.setTopFolder(resourcesToExport);
 
             // Add resources built to archive
             createArchive( tempZipFile.getAbsolutePath(), resourcesToExport );
+
 
             // Rebuild zip file to use classpath jar instead of including all jars in launch script
             ClasspathFixup fixup = new ClasspathFixup(manager);
@@ -182,6 +194,7 @@ public class Generator implements IApplication {
         List<ExportFileResource> processes = new ArrayList<ExportFileResource>();
 
         ExportFileResource resource = new ExportFileResource(job, job.getProperty().getLabel());
+
 
         processes.add(resource);
 
