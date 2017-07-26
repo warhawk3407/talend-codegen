@@ -129,17 +129,20 @@ public class Generator implements IApplication {
         ProcessItem job = getJob(jobName, version);
 
         JobJavaScriptsManager manager = null;
+        String ext = ".zip";
 
         if (exportType != null && exportType.equals("osgi")) {
+                System.out.println("Running OSGI Export");
                 manager = new JobJavaScriptOSGIForESBManager (exportChoiceMap, "Default", "Unix",
                         IProcessor.NO_STATISTICS, IProcessor.NO_TRACES);
+                ext = ".jar";
         }
         else {
                 manager = new JobJavaScriptsManager(exportChoiceMap, "Default", "Unix",
                        IProcessor.NO_STATISTICS, IProcessor.NO_TRACES);
         }
 
-        manager.setDestinationPath(targetDir + "/" + job.getProperty().getLabel() + "_" + version + ".zip");
+        manager.setDestinationPath(targetDir + "/" + job.getProperty().getLabel() + "_" + version + ext);
         manager.setContextEditableResultValuesList(new ArrayList<ContextParameterType>());
         manager.setMultiNodes(false);
         manager.setJobVersion(job.getProperty().getVersion());
@@ -302,7 +305,7 @@ public class Generator implements IApplication {
         exportChoiceMap.put(ExportChoice.needSourceCode, Params.getBooleanOption("-needSourceCode", Boolean.FALSE));
         exportChoiceMap.put(ExportChoice.needDependencies, Params.getBooleanOption("-needDependencies", Boolean.FALSE));
         exportChoiceMap.put(ExportChoice.needJobScript, Params.getBooleanOption("-needJobScript", Boolean.TRUE));
-        exportChoiceMap.put(ExportChoice.needContext, Params.getBooleanOption("-needContext", Boolean.FALSE));
+        exportChoiceMap.put(ExportChoice.needContext, Params.getBooleanOption("-needContext", Boolean.TRUE));
         exportChoiceMap.put(ExportChoice.applyToChildren, Params.getBooleanOption("-applyToChildren", Boolean.FALSE));
         // exportChoiceMap.put(ExportChoice.setParameterValues, Params.getBooleanOption("-setParameterValues", Boolean.FALSE));
 
