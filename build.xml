@@ -4,8 +4,8 @@
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.8"/>
     <property name="source" value="1.8"/>
-    <property name="talend_version" value="6.2.0"/>
-    <property name="talend_revision" value="20160510_1709"/>
+    <property name="talend_version" value="6.4.1"/>
+    <property name="talend_revision" value="20170623_1246"/>
     <path id="talend-codegen.classpath">
         <fileset dir="lib/${talend_version}/">
           <include name="*.jar"/>

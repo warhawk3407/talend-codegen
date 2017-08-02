@@ -1,7 +1,8 @@
 talend-codegen
 ==============
+Updated : Nikita Rousseau 02/08/2017 for Talend Open Studio - Big Data 6.4.1
 
-Command line code generation (job build/export) plugin for Talend, updated for >= v6.0.
+Command line code generation (job build/export) plugin for Talend, updated for >= v6.4.1
 
 Compiling & Configuring
 -----------------------
@@ -9,85 +10,14 @@ Compiling & Configuring
 Build:
 
 ```bash
-#to build the latest version available
-> make
-
 #ls in the out directory
->ls jar/talend-codegen_5.6.0.jar
-
-#build an older version
->make build_jar_5.4.1
+>ls jar/talend-codegen_X.X.X.jar
 
 #build directly with ant:
-> cat Makefile
-build_jar_5.6.0:
-	ant build -Dtalend_version=5.6.0 -Dtalend_revision=20141024_1545
-clean_5.6.0:
-	ant clean -Dtalend_version=5.6.0 -Dtalend_revision=20141024_1545
-
-#select your version
-> ant build -Dtalend_version=5.5.1 -Dtalend_revision=r118616
+>ant build -Dtalend_version=6.4.1 -Dtalend_revision=20170623_1246
 ```
 
 And copy `jar/talend-codegen<version>.jar` to the plugins directory of Talend.
-
-Usage with talend-codegen helper
---------------------------------
-
-This project is shipped with an helper script available in **./bin/talend-codegen**.
-
-This script must be modify to reflect your Talend installation (TALEND_DIR and TALEND_BIN at the beginning of the script)
-
-Generation:
-```bash
-# create out directory
-$ mkdir -p './out'
-
-# With all '-need' options enabled
-$ talend-codegen -p './MyProjectDir/' -o './out/' -j './MyJobName' -a
-
-# With custom options
-$ talend-codegen -p './MyProjectDir/' -o './out/' -j 'MyJobName' -O '-needLauncher=true -needContext=true'
-```
-
-help:
-```
-# help
-$ talend-codegen -h
-usage: talend-codegen -p <project dir> -o <out dir> -j <job name> \
-                    [-a] [-O <custom options>] [-T <talend dir>] [-c <comp dir>]
-
-Build Talend project from command line
-
-examples:
- * talend-codegen -p ./MyProjectDir/ -o out/ -j MyJobName -a
- * talend-codegen -p ./MyProjectDir/ -o out/ -j MyJobName -O '-needLauncher=true -needDependencies=true'
-
-arguments:
-  -p <project dir>: directory containing the talend project
-  -j <job id>: job to export
-  -o <out dir>: output directory
-
-optional arguments:
-  -a:                  enable all -need* options
-  -O <custom options>: custom options (cannot be used with -a)
-  -T <talend dir>:     talend install directory (default: /home/pcarpent/TOS_DI-r95165-V5.2.1)
-  -c <comp dir>:       location of any custom components used in the job
-
-codegen options (for -O):
- * -version - version of job to be exported
- * -needLauncher - include launcher script (true/false)
- * -needSystemRoutine - include system outines (true/false)
- * -needUserRoutine - and so on..
- * -needTalendLibraries
- * -needJobItem
- * -needSourceCode
- * -needDependencies
- * -needJobScript
- * -needContext
- * -applyToChildren
- * -buildType - (osgi/job)
-```
 
 Usage invoking TOS directly
 ---------------------------
@@ -135,5 +65,6 @@ cp $PROJECTDIR/libs/* /home/TOS_DI-r118616-V5.5.1/lib/java/
     -targetDir $TARGETDIR -componentDir $COMPONENTDIR
 ```
 
-
-
+```bash
+TOS_BD-win-x86_64 -nosplash --launcher.suppressErrors -data "C:\Users\ncel51046\Documents\workspace" -application au.org.emii.talend.codegen.Generator -jobName "neo_update_user" -projectDir "C:\Users\ncel51046\Documents\workspace\NEODEUS" -targetDir "C:\Users\ncel51046\Documents\builds"
+```

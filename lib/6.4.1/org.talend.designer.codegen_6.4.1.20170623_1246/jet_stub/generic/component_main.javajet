@@ -1,0 +1,203 @@
+<%@ jet
+imports="
+        java.util.List
+        java.util.Set
+        java.util.HashSet
+        org.talend.components.api.component.ComponentDefinition
+        org.talend.designer.core.generic.model.Component
+        org.talend.core.model.metadata.IMetadataColumn
+        org.talend.core.model.metadata.IMetadataTable
+        org.talend.core.model.metadata.types.JavaType
+        org.talend.core.model.metadata.types.JavaTypesManager
+        org.talend.core.model.process.ElementParameterParser
+        org.talend.core.model.process.IConnection
+        org.talend.core.model.process.IConnectionCategory
+        org.talend.core.model.process.INode
+        org.talend.core.model.process.EConnectionType
+        org.talend.designer.codegen.config.CodeGeneratorArgument
+        org.talend.core.model.utils.TalendTextUtils
+        org.talend.core.model.utils.NodeUtil
+        "
+%>
+<%@include file="@{org.talend.designer.codegen}/jet_stub/generic/component_util_indexedrecord_to_rowstruct.javajet"%>
+<%
+CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
+INode node = (INode)codeGenArgument.getArgument();
+String cid = node.getUniqueName();
+Component component = (Component)node.getComponent();
+ComponentDefinition def = component.getComponentDefinition();
+
+boolean hasInput = !NodeUtil.getIncomingConnections(node, IConnectionCategory.DATA).isEmpty();
+
+if(hasInput){
+    // These will be initialized if there are outgoing connections and will be
+    // null if there isn't a corresponding outgoing connection.
+    IndexedRecordToRowStructGenerator mainIrToRow = null;
+    IndexedRecordToRowStructGenerator rejectIrToRow = null;
+
+    List<? extends IConnection> outgoingConns = node.getOutgoingSortedConnections();
+    if (outgoingConns!=null){
+        for (int i = 0; i < outgoingConns.size(); i++) {
+            IConnection outgoingConn = outgoingConns.get(i);
+            if (outgoingConn.getLineStyle().hasConnectionCategory(IConnectionCategory.DATA)) {
+                %>
+                <%=outgoingConn.getName()%> = null;
+                <%
+            }
+            if ("MAIN".equals(outgoingConn.getConnectorName())) {
+                mainIrToRow = new IndexedRecordToRowStructGenerator(cid + "OutMain",
+                        outgoingConn);
+            }
+            if ("REJECT".equals(outgoingConn.getConnectorName())) {
+                rejectIrToRow = new IndexedRecordToRowStructGenerator(cid + "OutReject",
+                        outgoingConn);
+            }
+        }
+    }
+
+    // Generate the code to handle the incoming records.
+    IConnection inputConn = null;
+    List< ? extends IConnection> inputConns = node.getIncomingConnections();
+    if(inputConns!=null) {
+	   	for (IConnection conn : inputConns) {
+	   		if (conn.getLineStyle().hasConnectionCategory(IConnectionCategory.DATA)) {
+	   			inputConn = conn;
+	    	}
+	   	}
+   	}
+
+   	boolean hasValidInput = inputConn!=null;
+
+   	IMetadataTable metadata;
+    List<IMetadataTable> metadatas = node.getMetadataList();
+    boolean haveValidNodeMetadata = ((metadatas != null) && (metadatas.size() > 0) && (metadata = metadatas.get(0)) != null);
+
+    if (hasValidInput && haveValidNodeMetadata) {
+        List<IMetadataColumn> input_columnList = inputConn.getMetadataTable().getListColumns();
+
+        if (input_columnList!=null && !input_columnList.isEmpty()) {
+            // If there are dynamic columns in the schema, they need to be
+            // initialized into the runtime schema of the actual IndexedRecord
+            // provided to the component.
+
+            int dynamicPos = -1;
+	        for (int i = 0; i < input_columnList.size(); i++) {
+	            if (input_columnList.get(i).getTalendType().equals("id_Dynamic")) {
+	                dynamicPos = i;
+	                break;
+	            }
+	        }
+
+            if (dynamicPos != -1)  {
+                %>
+                if (!current_<%=cid%>.areDynamicFieldsInitialized()) {
+                    // Initialize the dynamic columns when they are first encountered.
+                    for (routines.system.DynamicMetadata dm_<%=cid%> : <%=inputConn.getName()%>.<%=input_columnList.get(dynamicPos).getLabel()%>.metadatas) {
+                        current_<%=cid%>.addDynamicField(
+                                dm_<%=cid%>.getName(),
+                                dm_<%=cid%>.getType(),
+                                dm_<%=cid%>.getLogicalType(),
+                                dm_<%=cid%>.getFormat(),
+                                dm_<%=cid%>.getDescription(),
+                                dm_<%=cid%>.isNullable());
+                    }
+                    current_<%=cid%>.createRuntimeSchema();
+                }
+                <%
+            }
+
+            %>
+            current_<%=cid%>.createNewRecord();
+            <%
+            for (int i = 0; i < input_columnList.size(); i++) { // column
+                IMetadataColumn column = input_columnList.get(i);
+                if (dynamicPos != i) {
+                    %>
+                    current_<%=cid%>.put("<%=column.getLabel()%>", <%=inputConn.getName()%>.<%=column.getLabel()%>);
+                    <%
+                } else {
+                    %>
+                    for (int i = 0; i < <%=inputConn.getName()%>.<%=column.getLabel()%>.getColumnCount(); i++) {
+                        current_<%=cid%>.put(<%=inputConn.getName()%>.<%=column.getLabel()%>.getColumnMetadata(i).getName(),
+                                <%=inputConn.getName()%>.<%=column.getLabel()%>.getColumnValue(i));
+                    }
+                    <%
+                }
+            } // column
+
+            // If necesary, generate the code to handle outgoing connections.
+            // TODO: For now, this can only handle one outgoing record for
+            // each incoming record.  To handle multiple outgoing records, code
+            // generation needs to occur in component_begin in order to open
+            // a for() loop.
+
+            // There will be a ClassCastException if the output component does
+            // not implement WriterWithFeedback, but permits outgoing
+            // connections.
+
+            %>
+            org.apache.avro.generic.IndexedRecord data_<%=cid%> = current_<%=cid%>.getCurrentRecord();
+
+            writer_<%=cid%>.write(data_<%=cid%>);
+            
+            nb_line_<%=cid %>++;
+            <%
+            if (mainIrToRow != null) {
+                %>
+            	if (writer_<%=cid%> instanceof org.talend.components.api.component.runtime.WriterWithFeedback) {
+					org.talend.components.api.component.runtime.WriterWithFeedback writerWithFeedbackMain_<%=cid%> = (org.talend.components.api.component.runtime.WriterWithFeedback) writer_<%=cid%>;
+					writerWithFeedbackMain_<%=cid%> = new org.talend.codegen.flowvariables.runtime.FlowVariablesWriter(writerWithFeedbackMain_<%=cid%>, container_<%=cid%>);
+                    java.util.Iterator outgoingMainRecords_<%=cid%> = writerWithFeedbackMain_<%=cid%>.getSuccessfulWrites().iterator();
+                    Object outgoingMain_<%=cid%> = null;
+                    if (outgoingMainRecords_<%=cid%>.hasNext()) {
+                        outgoingMain_<%=cid%> = outgoingMainRecords_<%=cid%>.next();
+                        if(outgoingMainRecords_<%=cid%>.hasNext()){
+                        	outgoingMain_<%=cid%> = data_<%=cid%>;
+                        }
+                    }
+                    <%
+                    if (rejectIrToRow == null) {
+                    %>
+                    else {
+                    	if (!writerWithFeedbackMain_<%=cid%>.getRejectedWrites().iterator().hasNext()) {
+                    		outgoingMain_<%=cid%> = data_<%=cid%>;
+                    	}
+                    }
+                    <%
+                    }
+                    %>
+                    if (outgoingMain_<%=cid%>!=null) {
+                    	<%=mainIrToRow.getConnection().getName()%> = new <%=mainIrToRow.getConnection().getName() %>Struct();
+                    	<%
+                        mainIrToRow.generateConvertRecord("outgoingMain_" + cid, mainIrToRow.getConnection().getName());
+                        %>
+                    }
+              	} else {
+              		// For no feedback writer,just pass the input record to the output
+              		if (data_<%=cid%>!=null) {
+                  		<%=mainIrToRow.getConnection().getName()%> = new <%=mainIrToRow.getConnection().getName() %>Struct();
+                		<%
+                        mainIrToRow.generateConvertRecord("data_" + cid, mainIrToRow.getConnection().getName());
+                        %>
+                  	}
+            	}
+            <%
+            }
+            if (rejectIrToRow != null) {
+            %>
+					org.talend.components.api.component.runtime.WriterWithFeedback writerWithFeedbackReject_<%=cid%> = (org.talend.components.api.component.runtime.WriterWithFeedback) writer_<%=cid%>;
+					writerWithFeedbackReject_<%=cid%> = new org.talend.codegen.flowvariables.runtime.FlowVariablesWriter(writerWithFeedbackReject_<%=cid%>, container_<%=cid%>);
+                    java.util.Iterator outgoingRejectRecords_<%=cid%> = writerWithFeedbackReject_<%=cid%>.getRejectedWrites().iterator();
+                    if (outgoingRejectRecords_<%=cid%>.hasNext()) {
+                        <%=rejectIrToRow.getConnection().getName()%> = new <%=rejectIrToRow.getConnection().getName() %>Struct();
+                        Object outgoingReject_<%=cid%> = outgoingRejectRecords_<%=cid%>.next();
+                        <%
+                        rejectIrToRow.generateConvertRecord("outgoingReject_" + cid, rejectIrToRow.getConnection().getName());
+                        %>
+                    }
+            <%
+            }
+        }
+    }
+} // canStart
+%>

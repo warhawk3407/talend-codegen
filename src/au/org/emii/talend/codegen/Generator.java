@@ -44,6 +44,7 @@ import org.talend.designer.runprocess.ProcessorUtilities;
 import org.talend.core.ui.export.ArchiveFileExportOperationFullPath;
 import org.talend.repository.documentation.ExportFileResource;
 import org.talend.repository.ui.wizards.exportjob.JavaJobExportReArchieveCreator;
+import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobScriptsManager;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobJavaScriptsManager;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.esb.JobJavaScriptOSGIForESBManager;
 import org.talend.repository.ui.wizards.exportjob.scriptsmanager.JobScriptsManager.ExportChoice;
@@ -133,12 +134,12 @@ public class Generator implements IApplication {
 
         if (exportType != null && exportType.equals("osgi")) {
                 System.out.println("Running OSGI Export");
-                manager = new JobJavaScriptOSGIForESBManager (exportChoiceMap, "Default", "Unix",
+                manager = new JobJavaScriptOSGIForESBManager (exportChoiceMap, "Default", JobScriptsManager.ALL_ENVIRONMENTS,
                         IProcessor.NO_STATISTICS, IProcessor.NO_TRACES);
                 ext = ".jar";
         }
         else {
-                manager = new JobJavaScriptsManager(exportChoiceMap, "Default", "Unix",
+                manager = new JobJavaScriptsManager(exportChoiceMap, "Default", JobScriptsManager.ALL_ENVIRONMENTS,
                        IProcessor.NO_STATISTICS, IProcessor.NO_TRACES);
         }
 
